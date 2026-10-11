@@ -6,7 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -213,64 +213,24 @@ class CreditCardTest {
       assertThat(card.getBalance()).isEqualByComparingTo("0.00");
     }
 
-    @Test
-    @DisplayName("Отклоняет снятие при превышении лимита на одну копейку")
-    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalExceedsCreditLimitByOneCent() {
+    @ParameterizedTest(name = "Списание {0} отклоняется с превышением лимита")
+    @CsvSource({
+      "1100.01, 'Превышен кредитный лимит: лимит 1000.00, текущий баланс 100.00, сумма списания 1100.01'",
+      "5000.00, 'Превышен кредитный лимит: лимит 1000.00, текущий баланс 100.00, сумма списания 5000.00'"
+    })
+    @DisplayName("Отклоняет снятие и сохраняет баланс при превышении кредитного лимита")
+    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalExceedsCreditLimit(
+      String amountStr,
+      String expectedMessage
+    ) {
       BigDecimal balanceBefore = card.getBalance();
-      BigDecimal amount = new BigDecimal("1100.01");
+      BigDecimal amount = new BigDecimal(amountStr);
 
       assertThatThrownBy(() -> card.withdrawal(amount))
         .isInstanceOf(InsufficientFundsException.class)
-        .hasMessage(
-          "Превышен кредитный лимит: лимит 1000.00"
-            + ", текущий баланс 100.00"
-            + ", сумма списания 1100.01");
+        .hasMessage(expectedMessage);
 
       assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
-    }
-
-    @Test
-    @DisplayName("Отклоняет снятие при значительном превышении лимита")
-    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalSignificantlyExceedsCreditLimit() {
-      BigDecimal balanceBefore = card.getBalance();
-
-      assertThatThrownBy(() -> card.withdrawal(new BigDecimal("5000.00")))
-        .isInstanceOf(InsufficientFundsException.class)
-        .hasMessage("Превышен кредитный лимит: лимит 1000.00"
-          + ", текущий баланс 100.00"
-          + ", сумма списания 5000.00");
-
-      assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
-    }
-
-    @Test
-    @DisplayName("Отклоняет null в качестве суммы снятия")
-    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalAmountIsNull() {
-      assertThatThrownBy(() -> card.withdrawal(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("Сумма списания обязательна");
-
-      assertThat(card.getBalance()).isEqualByComparingTo(INITIAL_BALANCE);
-    }
-
-    @Test
-    @DisplayName("Отклоняет нулевую сумму снятия")
-    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalAmountIsZero() {
-      assertThatThrownBy(() -> card.withdrawal(BigDecimal.ZERO))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Сумма операции должна быть больше нуля: 0");
-
-      assertThat(card.getBalance()).isEqualByComparingTo(INITIAL_BALANCE);
-    }
-
-    @Test
-    @DisplayName("Отклоняет отрицательную сумму снятия")
-    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalAmountIsNegative() {
-      assertThatThrownBy(() -> card.withdrawal(new BigDecimal("-10.00")))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Сумма операции должна быть больше нуля: -10.00");
-
-      assertThat(card.getBalance()).isEqualByComparingTo(INITIAL_BALANCE);
     }
 
     @Test
@@ -523,6 +483,19 @@ class CreditCardTest {
         .setScale(2, RoundingMode.HALF_EVEN);
 
       assertThat(debtCard.getDebt()).isEqualByComparingTo(expectedDebt);
+    }
+  }
+
+  @Nested
+  @DisplayName("Пополнение счёта")
+  class FundTests {
+
+    @Test
+    @DisplayName("Увеличивает баланс при пополнении")
+    void Should_IncreaseBalance_When_FundedWithValidAmount() {
+      card.fund(new BigDecimal("50.00"));
+
+      assertThat(card.getBalance()).isEqualByComparingTo("150.00");
     }
   }
 }

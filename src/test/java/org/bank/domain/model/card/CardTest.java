@@ -1,6 +1,9 @@
 package org.bank.domain.model.card;
 
+import org.bank.domain.exception.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.*;
 
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -11,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CardTest {
 
   private static final Currency USD = Currency.getInstance("USD");
+  private static final Currency JPY = Currency.getInstance("JPY");
   private static final String CARD_NAME = "Тестовая карта";
   private static final BigDecimal INITIAL_BALANCE = new BigDecimal("100.00");
 
@@ -44,6 +48,55 @@ class CardTest {
 
       assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
     }
+
+    @Test
+    @DisplayName("Отклоняет null в качестве суммы пополнения")
+    void Should_ThrowExceptionAndPreserveBalance_When_FundAmountIsNull() {
+      BigDecimal balanceBefore = card.getBalance();
+
+      assertThatThrownBy(() -> card.fund(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("Сумма операции обязательна");
+
+      assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
+    }
+
+    @ParameterizedTest(name = "Пополнение на сумму {0} отклоняется")
+    @ValueSource(strings = {"0", "0.00", "-10.00"})
+    @DisplayName("Отклоняет нулевую и отрицательную суммы пополнения")
+    void Should_ThrowExceptionAndPreserveBalance_When_FundAmountIsNotPositive(String amount) {
+      BigDecimal balanceBefore = card.getBalance();
+
+      assertThatThrownBy(() -> card.fund(new BigDecimal(amount)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Сумма операции должна быть больше нуля: " + amount);
+
+      assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
+    }
+
+    @Test
+    @DisplayName("Отклоняет пополнение с избыточной точностью")
+    void Should_ThrowExceptionAndPreserveBalance_When_FundAmountHasUnsupportedScale() {
+      BigDecimal balanceBefore = card.getBalance();
+
+      assertThatThrownBy(() -> card.fund(new BigDecimal("10.001")))
+        .isInstanceOf(UnsupportedFractionDigitsException.class)
+        .hasMessage("Неподдерживаемое количество дробных знаков");
+
+      assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
+    }
+
+    @Test
+    @DisplayName("Позволяет пополнить счёт после отклонённой операции")
+    void Should_AllowFunding_When_RejectedOperation() {
+      assertThatThrownBy(() -> card.fund(BigDecimal.ZERO))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Сумма операции должна быть больше нуля: 0");
+
+      card.fund(new BigDecimal("25.00"));
+
+      assertThat(card.getBalance()).isEqualByComparingTo("125.00");
+    }
   }
 
   @Nested
@@ -61,6 +114,27 @@ class CardTest {
     }
 
     @Test
+    @DisplayName("Корректно выполняет последовательные списания")
+    void shouldUpdateBalanceAfterMultipleWithdrawals() {
+      card.withdrawal(new BigDecimal("30.00"));
+      card.withdrawal(new BigDecimal("20.00"));
+
+      assertThat(card.getBalance()).isEqualByComparingTo("50.00");
+    }
+
+    @Test
+    @DisplayName("Отклоняет сумму с дробной частью для JPY")
+    void shouldThrowExceptionWhenJpyAmountHasFractionDigits() {
+      DebitCard jpyCard = new DebitCard(CARD_NAME, JPY, new BigDecimal("100"));
+
+      assertThatThrownBy(() -> jpyCard.withdrawal(new BigDecimal("10.50")))
+        .isInstanceOf(UnsupportedFractionDigitsException.class)
+        .hasMessage("Неподдерживаемое количество дробных знаков");
+
+      assertThat(jpyCard.getBalance()).isEqualByComparingTo("100");
+    }
+
+    @Test
     @DisplayName("Не изменяет баланс, если валидация карты запрещает снятие")
     void Should_PreserveBalance_When_WithdrawalValidationFails() {
       card.setWithdrawalAllowed(false);
@@ -73,14 +147,41 @@ class CardTest {
       assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
     }
 
-    @Test
-    @DisplayName("Отклоняет нулевую сумму снятия и сохраняет баланс")
-    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalAmountIsZero() {
+    @ParameterizedTest(name = "Снятие суммы {0} отклоняется")
+    @ValueSource(strings = {"0", "0.00", "-10.00"})
+    @DisplayName("Отклоняет нулевую, отрицательную суммы списания и сохраняет баланс")
+    void shouldThrowExceptionAndPreserveBalanceWhenWithdrawalAmountIsNotPositive(String amount) {
       BigDecimal balanceBefore = card.getBalance();
 
-      assertThatThrownBy(() -> card.withdrawal(BigDecimal.ZERO)).isInstanceOf(IllegalArgumentException.class);
+      assertThatThrownBy(() -> card.withdrawal(new BigDecimal(amount)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Сумма операции должна быть больше нуля: " + amount);
 
       assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
+    }
+
+    @Test
+    @DisplayName("Отклоняет null в качестве суммы списания")
+    void shouldThrowExceptionAndPreserveBalanceWhenWithdrawalAmountIsNull() {
+      BigDecimal balanceBefore = card.getBalance();
+
+      assertThatThrownBy(() -> card.withdrawal(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("Сумма операции обязательна");
+
+      assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
+    }
+
+    @ParameterizedTest(name = "Снятие {0} оставляет баланс {1}")
+    @CsvSource({
+      "100.00, 0.00",
+      "99.99, 0.01"
+    })
+    @DisplayName("Корректно обрабатывает граничные суммы списания")
+    void shouldLeaveExpectedBalanceWhenWithdrawnBoundaryAmount(String amount, String expectedBalance) {
+      card.withdrawal(new BigDecimal(amount));
+
+      assertThat(card.getBalance()).isEqualByComparingTo(expectedBalance);
     }
   }
 

@@ -40,12 +40,8 @@ class AbstractBankProductTest {
     }
   }
 
-  private static BigDecimal money(String value) {
-    return new BigDecimal(value);
-  }
-
   private static TestProduct newProduct() {
-    return new TestProduct(PRODUCT_NAME, USD, money(INITIAL_BALANCE));
+    return new TestProduct(PRODUCT_NAME, USD, new BigDecimal(INITIAL_BALANCE));
   }
 
   @Nested
@@ -61,7 +57,7 @@ class AbstractBankProductTest {
     })
     @DisplayName("Создаёт продукт с корректным начальным балансом")
     void Should_InitializeProduct_When_ValidBalanceProvided(String initialBalance, String expectedBalance) {
-      BigDecimal balance = money(initialBalance);
+      BigDecimal balance = new BigDecimal(initialBalance);
 
       TestProduct product = new TestProduct(PRODUCT_NAME, USD, balance);
 
@@ -121,16 +117,16 @@ class AbstractBankProductTest {
 
     static Stream<BigDecimal> negativeBalances() {
       return Stream.of(
-        money("-0.01"),
-        money("-10.50"),
-        money("-1000000000000.00")
+        new BigDecimal("-0.01"),
+        new BigDecimal("-10.50"),
+        new BigDecimal("-1000000000000.00")
       );
     }
 
     @Test
     @DisplayName("Отклоняет начальный баланс с лишними ненулевыми дробными знаками")
     void Should_ThrowException_When_BalanceHasExcessFractionDigits() {
-      BigDecimal balance = money("11.001");
+      BigDecimal balance = new BigDecimal("11.001");
 
       assertThatThrownBy(() -> new TestProduct(PRODUCT_NAME, USD, balance))
         .isInstanceOf(UnsupportedFractionDigitsException.class)
@@ -140,7 +136,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Принимает целую сумму в валюте без дробных единиц")
     void Should_AcceptBalance_When_CurrencyHasNoFractionDigitsAndAmountIsWhole() {
-      BigDecimal balance = money("10");
+      BigDecimal balance = new BigDecimal("10");
       
       TestProduct product = new TestProduct(PRODUCT_NAME, JPY, balance);
 
@@ -151,7 +147,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Отклоняет дробный баланс для валюты без дробных единиц")
     void Should_ThrowException_When_CurrencyHasNoFractionDigitsAndAmountIsFractional() {
-      BigDecimal balance = money("10.5");
+      BigDecimal balance = new BigDecimal("10.5");
 
       assertThatThrownBy(() -> new TestProduct(PRODUCT_NAME, JPY, balance))
         .isInstanceOf(UnsupportedFractionDigitsException.class)
@@ -173,7 +169,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Принимает очень большой начальный баланс без потери точности")
     void Should_PreservePrecision_When_InitialBalanceIsVeryLarge() {
-      BigDecimal balance = money("999999999999999999999999999999.99");
+      BigDecimal balance = new BigDecimal("999999999999999999999999999999.99");
 
       TestProduct product = new TestProduct(PRODUCT_NAME, USD, balance);
 
@@ -229,7 +225,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Увеличивает баланс на сумму пополнения")
     void Should_IncreaseBalance_When_FundedWithValidAmount() {
-      BigDecimal amount = money("25.50");
+      BigDecimal amount = new BigDecimal("25.50");
 
       product.fund(amount);
 
@@ -239,7 +235,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Принимает пополнение на минимальную денежную единицу")
     void Should_IncreaseBalance_When_FundedWithMinimumCurrencyUnit() {
-      BigDecimal amount = money("0.01");
+      BigDecimal amount = new BigDecimal("0.01");
       
       product.fund(amount);
 
@@ -249,7 +245,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Принимает сумму с завершающими нулями")
     void Should_NormalizeScale_When_FundedWithTrailingZeros() {
-      BigDecimal amount = money("11.230000000");
+      BigDecimal amount = new BigDecimal("11.230000000");
 
       product.fund(amount);
 
@@ -276,7 +272,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Отклоняет сумму с лишними ненулевыми дробными знаками")
     void Should_ThrowExceptionAndPreserveBalance_When_FundAmountHasExcessFractionDigits() {
-      BigDecimal amount = money("10.123");
+      BigDecimal amount = new BigDecimal("10.123");
       BigDecimal balanceBefore = product.getBalance();
 
       assertThatThrownBy(() -> product.fund(amount))
@@ -289,7 +285,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Поддерживает пополнение очень большой суммой")
     void Should_SupportFunding_When_AmountIsVeryLarge() {
-      BigDecimal amount = money("999999999999999999999999999999.99");
+      BigDecimal amount = new BigDecimal("999999999999999999999999999999.99");
 
       product.fund(amount);
 
@@ -311,7 +307,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Уменьшает баланс на сумму списания")
     void Should_DecreaseBalance_When_WithdrawnWithValidAmount() {
-      BigDecimal amount = money("25.50");
+      BigDecimal amount = new BigDecimal("25.50");
       
       product.withdraw(amount);
 
@@ -321,7 +317,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Позволяет списать сумму, равную балансу")
     void Should_ZeroBalance_When_WithdrawnExactBalance() {
-      BigDecimal amount = money("100.00");
+      BigDecimal amount = new BigDecimal("100.00");
 
       product.withdraw(amount);
 
@@ -331,7 +327,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Принимает сумму с завершающими нулями")
     void Should_NormalizeScale_When_WithdrawnWithTrailingZeros() {
-      BigDecimal amount = money("11.230000000");
+      BigDecimal amount = new BigDecimal("11.230000000");
 
       product.withdraw(amount);
 
@@ -358,7 +354,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Отклоняет сумму с лишними ненулевыми дробными знаками")
     void Should_ThrowExceptionAndPreserveBalance_When_WithdrawAmountHasExcessFractionDigits() {
-      BigDecimal amount = money("10.123");
+      BigDecimal amount = new BigDecimal("10.123");
       BigDecimal balanceBefore = product.getBalance();
 
       assertThatThrownBy(() -> product.withdraw(amount))
@@ -371,7 +367,7 @@ class AbstractBankProductTest {
     @Test
     @DisplayName("Поддерживает списание суммы, превышающей начальный баланс")
     void Should_AllowNegativeBalance_When_WithdrawnAmountExceedsBalance() {
-      BigDecimal amount = money("150.00");
+      BigDecimal amount = new BigDecimal("150.00");
       
       product.withdraw(amount);
 
@@ -389,7 +385,7 @@ class AbstractBankProductTest {
     void Should_MaintainCorrectBalance_When_FundedConcurrently() throws InterruptedException {
       int threadCount = 10;
       int operationsPerThread = 1_000;
-      BigDecimal amount = money("1.00");
+      BigDecimal amount = new BigDecimal("1.00");
       TestProduct product = newProduct();
 
       CountDownLatch startSignal = new CountDownLatch(1);
@@ -440,17 +436,17 @@ class AbstractBankProductTest {
         "Сумма операции обязательна"
       ),
       Arguments.of(
-        money("0.00"),
+        new BigDecimal("0.00"),
         IllegalArgumentException.class,
         "Сумма операции должна быть больше нуля: 0.00"
       ),
       Arguments.of(
-        money("-0.01"),
+        new BigDecimal("-0.01"),
         IllegalArgumentException.class,
         "Сумма операции должна быть больше нуля: -0.01"
       ),
       Arguments.of(
-        money("-10.00"),
+        new BigDecimal("-10.00"),
         IllegalArgumentException.class,
         "Сумма операции должна быть больше нуля: -10.00"
       )

@@ -12,6 +12,10 @@ public class Deposit extends AbstractBankProduct implements Fundable, Closable {
 
   private boolean closed;
 
+  public Deposit(@NotNull String name, @NotNull Currency currency) {
+    super(name, currency, BigDecimal.ZERO);
+  }
+
   public Deposit(@NotNull String name, @NotNull Currency currency, @NotNull BigDecimal balance) {
     super(name, currency, balance);
   }
