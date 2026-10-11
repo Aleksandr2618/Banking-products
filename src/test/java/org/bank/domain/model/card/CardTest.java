@@ -115,7 +115,7 @@ class CardTest {
 
     @Test
     @DisplayName("Корректно выполняет последовательные списания")
-    void shouldUpdateBalanceAfterMultipleWithdrawals() {
+    void Should_UpdateBalance_When_MultipleWithdrawals() {
       card.withdrawal(new BigDecimal("30.00"));
       card.withdrawal(new BigDecimal("20.00"));
 
@@ -124,7 +124,7 @@ class CardTest {
 
     @Test
     @DisplayName("Отклоняет сумму с дробной частью для JPY")
-    void shouldThrowExceptionWhenJpyAmountHasFractionDigits() {
+    void Should_ThrowException_When_JpyAmountHasFractionDigits() {
       DebitCard jpyCard = new DebitCard(CARD_NAME, JPY, new BigDecimal("100"));
 
       assertThatThrownBy(() -> jpyCard.withdrawal(new BigDecimal("10.50")))
@@ -150,7 +150,7 @@ class CardTest {
     @ParameterizedTest(name = "Снятие суммы {0} отклоняется")
     @ValueSource(strings = {"0", "0.00", "-10.00"})
     @DisplayName("Отклоняет нулевую, отрицательную суммы списания и сохраняет баланс")
-    void shouldThrowExceptionAndPreserveBalanceWhenWithdrawalAmountIsNotPositive(String amount) {
+    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalAmountIsNotPositive(String amount) {
       BigDecimal balanceBefore = card.getBalance();
 
       assertThatThrownBy(() -> card.withdrawal(new BigDecimal(amount)))
@@ -162,7 +162,7 @@ class CardTest {
 
     @Test
     @DisplayName("Отклоняет null в качестве суммы списания")
-    void shouldThrowExceptionAndPreserveBalanceWhenWithdrawalAmountIsNull() {
+    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalAmountIsNull() {
       BigDecimal balanceBefore = card.getBalance();
 
       assertThatThrownBy(() -> card.withdrawal(null))
@@ -178,7 +178,7 @@ class CardTest {
       "99.99, 0.01"
     })
     @DisplayName("Корректно обрабатывает граничные суммы списания")
-    void shouldLeaveExpectedBalanceWhenWithdrawnBoundaryAmount(String amount, String expectedBalance) {
+    void Should_LeaveExpectedBalance_When_WithdrawnBoundaryAmount(String amount, String expectedBalance) {
       card.withdrawal(new BigDecimal(amount));
 
       assertThat(card.getBalance()).isEqualByComparingTo(expectedBalance);
