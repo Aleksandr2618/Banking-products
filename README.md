@@ -146,3 +146,7 @@ mvn allure:serve
 JaCoCo используется для анализа покрытия исходного кода.
 
 Информация об анализе хранится в banking-products/jacoco.exec.
+
+## Результаты тестирования
+
+<img width="920" height="894" alt="Результат тестирования" src="https://github.com/user-attachments/assets/04b0da24-dedc-43e2-917f-a7f0966f0118" />
