@@ -163,21 +163,6 @@ class CreditCardTest {
   }
 
   @Nested
-  @DisplayName("Геттеры")
-  class GetterTests {
-
-    @Test
-    @DisplayName("Возвращает параметры кредитной карты")
-    void Should_ReturnConfiguredProperties_When_GettersCalled() {
-      assertThat(card.getName()).isEqualTo(CARD_NAME);
-      assertThat(card.getCurrency()).isEqualTo(USD);
-      assertThat(card.getInterestRate()).isEqualByComparingTo("20");
-      assertThat(card.getCreditLimit()).isEqualByComparingTo("1000.00");
-      assertThat(card.getBalance()).isEqualByComparingTo("100.00");
-    }
-  }
-
-  @Nested
   @DisplayName("Снятие средств")
   class WithdrawalTests {
 

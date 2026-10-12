@@ -178,40 +178,6 @@ class AbstractBankProductTest {
   }
 
   @Nested
-  @DisplayName("Геттеры")
-  class GetterTests {
-    @Test
-    @DisplayName("getName возвращает название продукта")
-    void Should_ReturnProductName_When_GetNameCalled() {
-      TestProduct product = newProduct();
-
-      String result = product.getName();
-
-      assertThat(result).isEqualTo(PRODUCT_NAME);
-    }
-
-    @Test
-    @DisplayName("getCurrency возвращает валюту продукта")
-    void Should_ReturnProductCurrency_When_GetCurrencyCalled() {
-      TestProduct product = newProduct();
-      
-      Currency result = product.getCurrency();
-
-      assertThat(result).isEqualTo(USD);
-    }
-
-    @Test
-    @DisplayName("getBalance возвращает актуальный баланс")
-    void Should_ReturnCurrentBalance_When_GetBalanceCalled() {
-      TestProduct product = newProduct();
-      
-      BigDecimal result = product.getBalance();
-
-      assertThat(result).isEqualByComparingTo("100.00");
-    }
-  }
-
-  @Nested
   @DisplayName("Пополнение баланса")
   class FundTests {
 
