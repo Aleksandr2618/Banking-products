@@ -124,5 +124,13 @@ class MoneyValidatorTest {
         .isInstanceOf(UnknownFractionDigitsException.class)
         .hasMessage("Неизвестная точность валюты: " + unknownCurrency);
     }
+
+    @Test
+    @DisplayName("Выбрасывает исключение, если валюта равна null")
+    void Should_ThrowException_When_CurrencyIsNull() {
+      assertThatThrownBy(() -> MoneyValidator.getFractionDigits(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("Валюта обязательна");
+    }
   }
 }

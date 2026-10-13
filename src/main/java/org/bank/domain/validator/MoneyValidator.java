@@ -23,7 +23,10 @@ public final class MoneyValidator {
     }
   }
 
-  public static int getFractionDigits(Currency currency) {
+  @NotNull
+  public static int getFractionDigits(@NotNull Currency currency) {
+    Objects.requireNonNull(currency, "Валюта обязательна");
+
     int fractionDigits = currency.getDefaultFractionDigits();
 
     if (fractionDigits < 0) {

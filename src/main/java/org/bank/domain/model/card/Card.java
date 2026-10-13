@@ -20,6 +20,7 @@ public abstract class Card extends AbstractBankProduct implements Fundable, With
 
   @Override
   public void withdrawal(@NotNull BigDecimal amount) {
+    requirePositiveAmount(amount);
     validateWithdrawal(amount);
     applyWithdrawal(amount);
   }

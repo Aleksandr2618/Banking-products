@@ -346,32 +346,36 @@ class AbstractBankProductTest {
   @DisplayName("Тесты в многопоточности")
   class ConcurrencyTests {
 
+    private static final int THREAD_COUNT = 10;
+    private static final int OPERATIONS_PER_THREAD = 1_000;
+    private static final int WORKERS_WAIT_SECONDS = 10;
+    private static final int TEST_TIMEOUT_SECONDS = 30;
+
     @Test
+    @Timeout(TEST_TIMEOUT_SECONDS)
     @DisplayName("Корректно обрабатывает параллельные пополнения")
     void Should_MaintainCorrectBalance_When_FundedConcurrently() throws InterruptedException {
-      int threadCount = 10;
-      int operationsPerThread = 1_000;
       BigDecimal amount = new BigDecimal("1.00");
       TestProduct product = newProduct();
 
       CountDownLatch startSignal = new CountDownLatch(1);
-      CountDownLatch completionSignal = new CountDownLatch(threadCount);
+      CountDownLatch completionSignal = new CountDownLatch(THREAD_COUNT);
 
       Queue<Throwable> exceptions = new ConcurrentLinkedQueue<>();
 
-      try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
-        for (int i = 0; i < threadCount; i++) {
+      try (ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT)) {
+        for (int i = 0; i < THREAD_COUNT; i++) {
           executor.submit(() -> {
             try {
               startSignal.await();
 
-              for (int j = 0; j < operationsPerThread; j++) {
+              for (int j = 0; j < OPERATIONS_PER_THREAD; j++) {
                 product.fund(amount);
               }
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
-            } catch (Exception e) {
-              exceptions.add(e);
+            } catch (Throwable t) {
+              exceptions.add(t);
             } finally {
               completionSignal.countDown();
             }
@@ -380,10 +384,14 @@ class AbstractBankProductTest {
       }
 
       startSignal.countDown();
-      completionSignal.await();
+
+      boolean allFinished = completionSignal.await(WORKERS_WAIT_SECONDS, TimeUnit.SECONDS);
+      assertThat(allFinished)
+        .as("Все %d рабочих потоков должны завершиться за %d c", THREAD_COUNT, WORKERS_WAIT_SECONDS)
+        .isTrue();
 
       BigDecimal expectedBalance = new BigDecimal(
-        threadCount * operationsPerThread
+        THREAD_COUNT * OPERATIONS_PER_THREAD
       ).add(new BigDecimal(INITIAL_BALANCE));
 
       assertThat(product.getBalance()).isEqualByComparingTo(expectedBalance);

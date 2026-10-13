@@ -51,8 +51,6 @@ public class CreditCard extends Card implements DebtHolder {
 
   @Override
   protected void validateWithdrawal(@NotNull BigDecimal amount) {
-    Objects.requireNonNull(amount, "Сумма списания обязательна");
-
     BigDecimal resultingBalance = getBalance().subtract(amount);
 
     if (resultingBalance.negate().compareTo(creditLimit) > 0) {
@@ -67,8 +65,10 @@ public class CreditCard extends Card implements DebtHolder {
   @Override
   @NotNull
   public BigDecimal getDebt() {
+    int fractionDigits = MoneyValidator.getFractionDigits(getCurrency());
+
     if (getBalance().signum() >= 0) {
-      return BigDecimal.ZERO.setScale(getCurrency().getDefaultFractionDigits());
+      return BigDecimal.ZERO.setScale(fractionDigits);
     }
 
     BigDecimal principalDebt = getBalance().negate();

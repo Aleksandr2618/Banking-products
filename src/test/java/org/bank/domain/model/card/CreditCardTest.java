@@ -247,6 +247,18 @@ class CreditCardTest {
 
       assertThat(hugeLimitCard.getBalance()).isEqualByComparingTo(hugeAmount.negate());
     }
+
+    @Test
+    @DisplayName("Отклоняет null в качестве суммы списания")
+    void Should_ThrowExceptionAndPreserveBalance_When_WithdrawalAmountIsNull() {
+      BigDecimal balanceBefore = card.getBalance();
+
+      assertThatThrownBy(() -> card.withdrawal(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("Сумма операции обязательна");
+
+      assertThat(card.getBalance()).isEqualByComparingTo(balanceBefore);
+    }
   }
 
   @Nested
